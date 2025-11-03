@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ACCESS DENIED - LAW ENFORCEMENT ALERT</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #000;
+            color: #f00;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Flashing Lights Effect */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::before {
+            background: radial-gradient(circle, rgba(255,0,0,0.4) 0%, rgba(0,0,0,0) 70%);
+            animation: flash-red 2s infinite;
+        }
+
+        body::after {
+            background: radial-gradient(circle, rgba(0,0,255,0.4) 0%, rgba(0,0,0,0) 70%);
+            animation: flash-blue 2.5s infinite;
+        }
+
+        @keyframes flash-red {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes flash-blue {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .loading-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .loading-text {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-container {
+            width: 300px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.1s linear;
+        }
+
+        .warning-screen {
+            display: none;
+        }
+
+        .alert-container {
+            background-color: #111;
+            border: 2px solid #f00;
+            padding: 30px 40px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.5);
+        }
+
+        .alert-header {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #f00;
+            animation: pulse-text 1s infinite;
+        }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .agency-seal {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px auto;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #fff;
+            background-color: #333;
+        }
+
+        .alert-message {
+            font-size: 16px;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .details {
+            font-size: 14px;
+            color: #999;
+            margin-top: 20px;
+        }
+
+        .details span {
+            color: #0f0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-text" id="loadingText">Creating Your Account</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <div class="warning-screen" id="warningScreen">
+        <div class="alert-container">
+            <div class="agency-seal">FEDDED</div>
+            <div class="alert-header">ACCESS DENIED</div>
+            <p class="alert-message">
+                Your IP address, email, and password have been logged and forwarded to law enforcement for further investigation.
+            </p>
+            <p class="details">
+                Case ID: <span id="caseId">---- ---- ----</span>
+            </p>
+        </div>
+    </div>
+
+    <audio id="sirenAudio" loop>
+        <source src="audio/police-siren.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="chatterAudio" loop>
+        <source src="audio/radio-chatter.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Generate a secure-ish random hex string of requested length
+        function randomHex(len) {
+            const bytes = new Uint8Array(Math.ceil(len / 2));
+            crypto.getRandomValues(bytes);
+            let hex = '';
+            for (let i = 0; i < bytes.length; i++) {
+                hex += bytes[i].toString(16).padStart(2, '0');
+            }
+            return hex.slice(0, len).toUpperCase();
+        }
+
+        // Format case id like "7F3A-B9E2-4C1D" (3 groups of 4 hex chars)
+        function generateCaseId() {
+            return `${randomHex(4)}-${randomHex(4)}-${randomHex(4)}`;
+        }
+
+        // Insert a new Case ID into the page (and optionally animate or change style)
+        function setCaseId() {
+            const el = document.getElementById('caseId');
+            if (!el) return;
+            const id = generateCaseId();
+            el.textContent = id;
+            // small visual cue: briefly glow the value
+            el.style.transition = 'text-shadow 0.25s ease';
+            el.style.textShadow = '0 0 12px #0f0';
+            setTimeout(() => el.style.textShadow = 'none', 600);
+        }
+
+        window.onload = function() {
+            setCaseId(); // set the dynamic case ID immediately on load
+
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingText = document.getElementById('loadingText');
+            const progressBar = document.getElementById('progressBar');
+            const warningScreen = document.getElementById('warningScreen');
+            const siren = document.getElementById('sirenAudio');
+            const chatter = document.getElementById('chatterAudio');
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 30) {
+                    progress++;
+                    progressBar.style.width = progress + '%';
+                } else {
+                    clearInterval(progressInterval);
+                    setTimeout(() => {
+                        loadingText.textContent = 'Password and email successful';
+                        setTimeout(() => {
+                            loadingText.textContent = 'Account created';
+                            setTimeout(() => {
+                                loadingScreen.style.display = 'none';
+                                warningScreen.style.display = 'block';
+                                // regenerate a fresh ID right before showing (optional)
+                                setCaseId();
+                                siren.volume = 0.4;
+                                chatter.volume = 0.3;
+                                siren.play().catch(e => console.error("Siren playback failed:", e));
+                                chatter.play().catch(e => console.error("Chatter playback failed:", e));
+                            }, 800);
+                        }, 800);
+                    }, 500);
+                }
+            }, 50);
+        };
+    </script>
+
+</body>
+</html>
